@@ -1,0 +1,42 @@
+#!/bin/bash
+TIME=15
+
+function notify() {
+  notify-send -u low "$@"
+}
+
+function copy_password() {
+  gpase_id="${2}-${1}"
+  gpaste-client add-password "$gpase_id" "$3"
+  notify "${2} $1 copied" "Will be deleted in ${TIME} seconds"
+  ./clear-password "$gpase_id" $TIME &
+}
+
+function copy_field() {
+  field=$(pass "$1" | grep -i "$3" | cut -d ' ' -f2-)
+  if [[ -n $field ]]; then
+    gpaste-client add "$field"
+    notify "${2} ${1} copied"
+  else
+    notify "${2} ${1} not found"
+  fi
+}
+
+pass "$1" >/dev/null 2>&1 || exit 1
+case $2 in
+  'all')
+    copy_password "$1" Entry $(pass "$1")
+    ;;
+  'password')
+    copy_password "$1" Password $(pass "$1" | head -1)
+    ;;
+  'login')
+    copy_field "$1" Login "login\|user"
+    ;;
+  'url')
+    copy_field "$1" URL url
+    ;;
+  *)
+    exit 1
+    ;;
+esac
