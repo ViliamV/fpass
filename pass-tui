@@ -1,6 +1,32 @@
 #!/bin/bash
 orig_location="$PWD"
 
+# read arguments
+OPTS=hnpP
+LONGOPTS=help,no-exit,pull,push
+PARSED=$(getopt --options=$OPTS --longoptions=$LONGOPTS --name "$0" -- "$@")
+eval set -- "$PARSED"
+no_exit=0 git_pull=0 git_push=0
+while true; do case "$1" in
+  -h | --help )
+    echo $help
+    exit
+    ;;
+  -n | --no-exit )
+    no_exit=1
+    ;;
+  -p | --pull )
+    git_pull=1
+    ;;
+  -P | --push )
+    git_push=1
+    ;;
+  -- )
+    break
+    ;;
+esac; shift; done
+echo $no_exit $git_pull $git_push && exit
+
 SOURCE="${BASH_SOURCE[0]}"
 while [ -h "$SOURCE" ]; do # resolve $SOURCE until the file is no longer a symlink
   DIR="$( cd -P "$( dirname "$SOURCE" )" >/dev/null 2>&1 && pwd )"
@@ -9,7 +35,7 @@ while [ -h "$SOURCE" ]; do # resolve $SOURCE until the file is no longer a symli
 done
 DIR="$( cd -P "$( dirname "$SOURCE" )" >/dev/null 2>&1 && pwd )"
 
-HEADER="Copy: Ctrl + [U]rl, [L]ogin, [P]assword, [A]ll\nCopy: Enter - password\nAdd: Ctrl + [G]enerate, emp[T]y\nModify: Ctrl + [D]elete, [E]dit, [R]ename"
+HEADER="Copy: Ctrl + [U]rl, [L]ogin, [P]assword, [A]ll\nCopy: Enter - password\nAdd: Ctrl + [G]enerate, emp[T]y\nModify: Ctrl + [D]elete, [E]dit, [R]ename\n"
 PASSWORD_STORE=${PASSWORD_STORE_DIR-~/.password-store}
 cd "$PASSWORD_STORE"
 
@@ -17,8 +43,8 @@ files_cmd="git ls-tree -r --name-only HEAD"
 pass_parser="${DIR}/pass-parser"
 pass_editor="${DIR}/add_template"
 
-return_code=0
-while [ $return_code -eq 0 ]
+[[ $git_pull -eq 1 ]] && pass git pull
+while :
 do
   clear
   outputs=($((
@@ -27,8 +53,7 @@ do
   ) | \
     fzf \
     --reverse \
-    --color=info:17 \
-    --header-lines=4 \
+    --header-lines=5 \
     --no-multi \
     --prompt='pass > ' \
     --bind 'esc:cancel' \
@@ -42,19 +67,23 @@ do
     --bind 'ctrl-d:execute(echo delete)+accept' \
     --bind 'ctrl-e:execute(echo edit)+accept' \
     --bind 'ctrl-r:execute(echo rename)+accept' \
-    --preview 'pass {}'
+    --preview 'pass {}' \
+    --preview-window=down:50%
       ))
-  return_code=$?
+  if [[ $? -ne 0 ]] && [[ $no_exit -eq 0 ]]; then
+    exit
+  fi
   cmd=${outputs[0]}
   selected=${outputs[@]:1}
   # echo cmd $cmd
   # echo selected $selected
   # exit
   case $cmd in
-    edit )
-      pass edit "$selected"
+    edit)
+      pass edit "$selected" && \
+      [[ $git_push -eq 1 ]] && pass git push
       ;;
-    generate )
+    generate)
       echo "Generate new password"
       read -p "Password name/path  : " password_name
       [[ -z "$password_name" ]] && continue
@@ -62,33 +91,34 @@ do
       password_length=${password_length:-20}
       read -p "Include symbols[Y/n]: " symbols
       case ${symbols:-y} in
-        [yY]* )
+        [yY]*)
           pass generate "$password_name" "$password_length"
           ;;
-        * )
+        *)
           pass generate --no-symbols "$password_name" "$password_length"
           ;;
       esac
-      [[ $? -eq 0 ]] && EDITOR=$pass_editor pass edit "$password_name"
+      [[ $? -eq 0 ]] && EDITOR=$pass_editor pass edit "$password_name" && \
+      [[ $git_push -eq 1 ]] && pass git push
       ;;
-    rename )
+    rename)
       echo "Rename password"
       echo Old name/path: $selected
       read -p "New name/path: " -e -i "$selected"
       [[ -z "$REPLY" ]] && continue
-      pass mv "$selected" "$REPLY"
+      pass mv "$selected" "$REPLY" && \
+      [[ $git_push -eq 1 ]] && pass git push
       ;;
-    empty )
+    empty)
       echo "Generate new empty password"
       read -p "Password name/path: "
       [[ -z "$REPLY" ]] && continue
-      pass edit "$REPLY"
+      pass edit "$REPLY" && \
+      [[ $git_push -eq 1 ]] && pass git push
       ;;
-    delete )
-      pass rm "$selected"
-      ;;
-    * )
-      exit 1
+    delete)
+      pass rm "$selected" && \
+      [[ $git_push -eq 1 ]] && pass git push
       ;;
   esac
 done
