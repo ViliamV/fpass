@@ -25,7 +25,6 @@ while true; do case "$1" in
     break
     ;;
 esac; shift; done
-echo $no_exit $git_pull $git_push && exit
 
 SOURCE="${BASH_SOURCE[0]}"
 while [ -h "$SOURCE" ]; do # resolve $SOURCE until the file is no longer a symlink
@@ -39,7 +38,14 @@ HEADER="Copy: Ctrl + [U]rl, [L]ogin, [P]assword, [A]ll\nCopy: Enter - password\n
 PASSWORD_STORE=${PASSWORD_STORE_DIR-~/.password-store}
 cd "$PASSWORD_STORE"
 
-files_cmd="git ls-tree -r --name-only HEAD"
+inside_git_repo="$(git rev-parse --is-inside-work-tree 2>/dev/null)"
+if [[ $inside_git_repo ]]; then
+  files_cmd="git ls-tree -r --name-only HEAD | grep \.gpg$"
+else
+  files_cmd="find -name '*.gpg' | sed -e 's/\.\///'"
+  # eval $files_cmd
+  # exit
+fi
 pass_parser="${DIR}/pass-parser"
 pass_editor="${DIR}/add_template"
 
@@ -49,7 +55,7 @@ do
   clear
   outputs=($((
     echo -e $HEADER
-    $files_cmd | grep \.gpg$ | sed -e 's/\.gpg//' | sort
+    eval "$files_cmd" | sed -e 's/\.gpg//' | sort
   ) | \
     fzf \
     --reverse \
@@ -85,11 +91,11 @@ do
       ;;
     generate)
       echo "Generate new password"
-      read -p "Password name/path  : " password_name
+      read -p "Password name/path: " password_name
       [[ -z "$password_name" ]] && continue
-      read -p "Password length[20] : " password_length
+      read -p "Password length [20]: " password_length
       password_length=${password_length:-20}
-      read -p "Include symbols[Y/n]: " symbols
+      read -p "Include symbols [Y/n]: " symbols
       case ${symbols:-y} in
         [yY]*)
           pass generate "$password_name" "$password_length"
@@ -98,7 +104,7 @@ do
           pass generate --no-symbols "$password_name" "$password_length"
           ;;
       esac
-      [[ $? -eq 0 ]] && EDITOR=$pass_editor pass edit "$password_name" && \
+      [[ $? -eq 0 ]] && EDITOR=$pass_editor pass edit "$password_name"
       [[ $git_push -eq 1 ]] && pass git push
       ;;
     rename)
