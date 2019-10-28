@@ -1,3 +1,17 @@
 #!/bin/bash
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
-nvim + -c "r $DIR/template" -- "$@"
+if [[ -n $EDITOR ]]; then
+  if [[ $EDITOR =~ 'nvim' ]]; then
+    nvim + -c "r $DIR/template" -- "$@"
+  elif [[ $EDITOR =~ 'vim' ]]; then
+    vim + -c "r $DIR/template" -- "$@"
+  else
+    $EDITOR "$@"
+  fi
+else
+  if [[ $(command -v nvim) ]]; then
+    nvim + -c "r $DIR/template" -- "$@"
+  elif [[ $(command -v vim) ]]; then
+    vim + -c "r $DIR/template" -- "$@"
+  fi
+fi
