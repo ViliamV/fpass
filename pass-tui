@@ -34,7 +34,7 @@ while [ -h "$SOURCE" ]; do # resolve $SOURCE until the file is no longer a symli
 done
 DIR="$( cd -P "$( dirname "$SOURCE" )" >/dev/null 2>&1 && pwd )"
 
-HEADER="Copy: Ctrl + [U]rl, [L]ogin, [P]assword, [A]ll\nCopy: Enter - password\nAdd: Ctrl + [G]enerate, emp[T]y\nModify: Ctrl + [D]elete, [E]dit, [R]ename\n"
+HEADER="Copy: Ctrl + [U]rl, [L]ogin, [P]assword, [A]ll\nCopy: Enter - password\nAdd: Ctrl + [G]enerate, emp[T]y\nModify: Ctrl + [D]elete, [E]dit, [R]ename\nShow password: Ctrl + [S]how\n"
 PASSWORD_STORE=${PASSWORD_STORE_DIR-~/.password-store}
 cd "$PASSWORD_STORE"
 
@@ -63,6 +63,7 @@ do
     --no-multi \
     --prompt='pass > ' \
     --bind 'esc:cancel' \
+    --bind 'ctrl-s:toggle-preview' \
     --bind "ctrl-l:execute-silent($pass_parser {} login)" \
     --bind "ctrl-u:execute-silent($pass_parser {} url)" \
     --bind "ctrl-p:execute-silent($pass_parser {} password)" \
@@ -74,7 +75,7 @@ do
     --bind 'ctrl-e:execute(echo edit)+accept' \
     --bind 'ctrl-r:execute(echo rename)+accept' \
     --preview 'pass {}' \
-    --preview-window=down:50%
+    --preview-window=down:50%:hidden
       ))
   if [[ $? -ne 0 ]] && [[ $no_exit -eq 0 ]]; then
     exit
