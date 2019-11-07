@@ -2,11 +2,11 @@
 TIME=15
 
 
-if [[ $(command -v gpaste-client) ]]; then
+if command -v gpaste-client > /dev/null; then
   clipboard="gpaste"
-elif [[ $(command -v xclip) ]]; then
+elif command -v xclip > /dev/null; then
   clipboard="xclip"
-elif [[ $(command -v xsel) ]]; then
+elif command -v xsel > /dev/null; then
   clipboard="xsel"
 else
   notify-send -u critical "No clipboard tool found" "pass-tui supports gpaste, xclip, and xsel"
