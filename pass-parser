@@ -55,19 +55,9 @@ function copy_field() {
 
 pass "$1" >/dev/null 2>&1 || exit 1
 case $2 in
-  'all')
-    copy_password "$1" Entry "$(pass "$1")"
-    ;;
-  'password')
-    copy_password "$1" Password "$(pass "$1" | head -1)"
-    ;;
-  'login')
-    copy_field "$1" Login "login\|user"
-    ;;
-  'url')
-    copy_field "$1" URL url
-    ;;
-  *)
-    exit 1
-    ;;
+  'all') copy_password "$1" Entry "$(pass "$1")" ;;
+  'password') copy_password "$1" Password "$(pass "$1" | head -1)" ;;
+  'login') copy_field "$1" Login "login\|user" ;;
+  'url') copy_field "$1" URL url ;;
+  *) exit 1 ;;
 esac

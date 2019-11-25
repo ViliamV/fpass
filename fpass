@@ -55,8 +55,6 @@ else
   files_cmd="find -name '*.gpg' | sed -e 's/\.\///'"
   git_pull=0
   git_push=0
-  # eval $files_cmd
-  # exit
 fi
 pass_parser="${DIR}/pass-parser"
 
@@ -82,7 +80,7 @@ function pass_generate() {
 
 function pass_rename() {
   echo "Rename password"
-  echo Old name/path: "$1"
+  echo "Old name/path: $1"
   read -p "New name/path: " -e -i "$1"
   [[ -z "$REPLY" ]] && return 1
   pass mv "$1" "$REPLY"

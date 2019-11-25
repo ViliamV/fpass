@@ -1,2 +1,2 @@
-# pass-tui
+# fpass
 pass + FZF = :heart:
